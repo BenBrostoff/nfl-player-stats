@@ -8,6 +8,7 @@ import os
 import json
 import string
 import glob
+import db
 
 BASE_URL = 'https://www.pro-football-reference.com{0}'
 PLAYER_LIST_URL = 'https://www.pro-football-reference.com/players/{0}'
@@ -74,7 +75,7 @@ class Scraper():
                     print('There was a problem parsing stats for {}'.format(player_profile_url))
                     continue
                 self.save_player_profile(player.profile)
-                self.save_player_game_stats(player.game_stats, player.player_id, player.profile['name'])
+                self.save_player_game_stats(player.game_stats, player.profile)
                 player_id += 1
         self.condense_data()
 
@@ -116,9 +117,10 @@ class Scraper():
         except OSError:
             pass
         with open(filename, 'w') as fout:
+            # from IPython import embed; embed();
             json.dump(profile, fout)
 
-    def save_player_game_stats(self, games, player_id, player_name):
+    def save_player_game_stats(self, games, player_profile):
         """Save a list of player games with stats info
 
             Args:
@@ -129,13 +131,17 @@ class Scraper():
             Return:
                 None
         """
-        filename = '{}/{}_{}.json'.format(STATS_DIR, player_id, player_name.replace(' ', '-'))
-        try:
-            os.makedirs(STATS_DIR)
-        except OSError:
-            pass
-        with open(filename, 'w') as fout:
-            json.dump(games, fout)
+        # filename = '{}/{}_{}.json'.format(STATS_DIR, player_id, player_name.replace(' ', '-'))
+        # try:
+        #     os.makedirs(STATS_DIR)
+        # except OSError:
+        #     pass
+        # with open(filename, 'w') as fout:
+        #     from IPython import embed; embed();
+        #     json.dump(games, fout)
+        for game in games:
+            db.write_row(game, player_profile)
+            print('Wrote game for {}'.format(player_profile['name']))
 
     def get_players_for_letter(self, letter, active_only=True):
         """Get a list of player links for a letter of the alphabet.
