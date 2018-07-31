@@ -61,6 +61,7 @@ class Scraper():
             self.clear_data()
         player_id = self.first_player_id
         for letter in self.letters_to_scrape:
+            print('Now scraping {}'.format(letter))
             player_profile_urls = self.get_players_for_letter(letter)
             for player_profile_url in player_profile_urls:
                 player = Player(player_id, player_profile_url, self)
@@ -136,7 +137,7 @@ class Scraper():
         with open(filename, 'w') as fout:
             json.dump(games, fout)
 
-    def get_players_for_letter(self, letter):
+    def get_players_for_letter(self, letter, active_only=True):
         """Get a list of player links for a letter of the alphabet.
             Site organizes players by first letter of last name.
 
@@ -149,7 +150,16 @@ class Scraper():
         response = self.get_page(PLAYER_LIST_URL.format(letter))
         soup = BeautifulSoup(response.content, 'html.parser')
 
-        players = soup.find('div', {'id': 'div_players'}).find_all('a')
+        if active_only:
+            players = [
+                p.next_element for p in
+                soup.find('div', {'id': 'div_players'}).find_all('b')
+            ]
+        else:
+            players = soup.find('div', {'id': 'div_players'}).find_all('a')
+
+        print('Retrieving {} players'.format(len(players)))
+
         return [BASE_URL.format(player['href']) for player in players]
 
     def get_page(self, url, retry_count=0):
@@ -231,7 +241,7 @@ class Player():
 
         profile_section = soup.find('div', {'id': 'meta'})
         self.profile['name'] = profile_section.find('h1', {'itemprop': 'name'}).contents[0]
-        print('scaping {}'.format(self.profile['name']))
+        print('scraping {}'.format(self.profile['name']))
 
         profile_attributes = profile_section.find_all('p')
         current_attribute = 1
